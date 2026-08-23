@@ -632,6 +632,16 @@ elif [[ "$MODE" == "wings" ]]; then
     exit 0
 fi
 
+# If running via pipe (curl | bash) without args, re-execute from temp file
+# so interactive read commands work properly
+if [[ ! -t 0 ]]; then
+    SCRIPT_PATH="/tmp/pterodactyl-installer.sh"
+    curl -fsSL https://raw.githubusercontent.com/VincentSaputra/Pterodactyl-Installer-Vin/main/install.sh -o "$SCRIPT_PATH"
+    chmod +x "$SCRIPT_PATH"
+    exec "$SCRIPT_PATH"
+    exit 0
+fi
+
 # Interactive menu mode
 echo ""
 echo "=========================================="
