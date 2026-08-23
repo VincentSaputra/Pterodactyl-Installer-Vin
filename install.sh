@@ -144,9 +144,9 @@ install_panel() {
     # Create database and user
     mysql -u root <<EOF
 CREATE DATABASE IF NOT EXISTS ${DB_NAME};
-CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';
-CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
-CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
+CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED WITH mysql_native_password BY '${DB_PASS}';
+CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASS}';
+CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED WITH mysql_native_password BY '${DB_PASS}';
 GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';
 GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'%';
@@ -156,13 +156,10 @@ EOF
     # Verify database connection
     log_info "Verifying database connection..."
     if ! mysql -u "${DB_USER}" -p"${DB_PASS}" -h 127.0.0.1 -e "SELECT 1" >/dev/null 2>&1; then
-        log_error "Gagal terhubung ke database! Cek kredensial MySQL."
-        log_info "Mencoba memperbaiki authentication..."
-        
-        # Try to fix by setting password explicitly
+        log_warn "Koneksi database gagal, mencoba memperbaiki..."
         mysql -u root <<EOF
-ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
-ALTER USER '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';
+ALTER USER '${DB_USER}'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_PASS}';
+ALTER USER '${DB_USER}'@'127.0.0.1' IDENTIFIED WITH mysql_native_password BY '${DB_PASS}';
 FLUSH PRIVILEGES;
 EOF
     fi
