@@ -192,6 +192,23 @@ EOF
     php artisan migrate --seed --force
 
     # Create admin user
+    if [[ -t 0 ]]; then
+        log_info "Membuat admin user..."
+        read -p "Email admin: " ADMIN_EMAIL
+        read -p "Username admin: " ADMIN_USER
+        read -sp "Password admin: " ADMIN_PASS
+        echo ""
+        read -p "Nama depan: " ADMIN_FIRST
+        read -p "Nama belakang: " ADMIN_LAST
+    else
+        ADMIN_EMAIL="${ADMIN_EMAIL:-admin@example.com}"
+        ADMIN_USER="${ADMIN_USER:-admin}"
+        ADMIN_PASS="${ADMIN_PASS:-$(openssl rand -base64 16)}"
+        ADMIN_FIRST="${ADMIN_FIRST:-Admin}"
+        ADMIN_LAST="${ADMIN_LAST:-User}"
+        log_info "Membuat admin user dengan kredensial default..."
+    fi
+
     php artisan p:user:make \
         --no-interaction \
         --email="$ADMIN_EMAIL" \
@@ -199,9 +216,6 @@ EOF
         --password="$ADMIN_PASS" \
         --name-first="$ADMIN_FIRST" \
         --name-last="$ADMIN_LAST"
-
-    # Setup queue worker
-    php artisan p:install --no-interaction --force
 
     # Step 7: Configure Nginx
     log_step "[7/8] Configuring Nginx..."
@@ -276,6 +290,28 @@ EOF
     # Set permissions
     chown -R www-data:www-data /var/www/pterodactyl/*
 
+    # Save credentials to file
+    cat > /root/pterodactyl_credentials.txt <<EOF
+==========================================
+PTERODACTYL PANEL - KREDENSIAL
+==========================================
+
+Panel URL: $APP_URL
+Admin Email: $ADMIN_EMAIL
+Admin User: $ADMIN_USER
+Admin Pass: $ADMIN_PASS
+
+Database: $DB_NAME
+DB User: $DB_USER
+DB Pass: $DB_PASS
+
+==========================================
+Dibuat: $(date)
+==========================================
+EOF
+
+    chmod 600 /root/pterodactyl_credentials.txt
+
     # Final info
     echo ""
     log_info "=========================================="
@@ -291,6 +327,7 @@ EOF
     log_info "DB User: $DB_USER"
     log_info "DB Pass: $DB_PASS"
     echo ""
+    log_info "Kredensial disimpan di: /root/pterodactyl_credentials.txt"
     log_info "Simpan kredensial di atas dengan AMAN!"
     echo ""
     log_info "Langkah selanjutnya:"
