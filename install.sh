@@ -632,14 +632,21 @@ elif [[ "$MODE" == "wings" ]]; then
     exit 0
 fi
 
-# If running via pipe (curl | bash) without args, re-execute from temp file
-# so interactive read commands work properly
+# If running via pipe (curl | bash) without args, stdin is not a terminal
+# The script needs interactive input, so we must re-execute it properly
 if [[ ! -t 0 ]]; then
-    SCRIPT_PATH="/tmp/pterodactyl-installer.sh"
-    curl -fsSL https://raw.githubusercontent.com/VincentSaputra/Pterodactyl-Installer-Vin/main/install.sh -o "$SCRIPT_PATH"
-    chmod +x "$SCRIPT_PATH"
-    exec "$SCRIPT_PATH"
-    exit 0
+    echo "=========================================="
+    echo "  Pterodactyl Auto Installer"
+    echo "=========================================="
+    echo ""
+    echo "Script ini memerlukan input interaktif."
+    echo "Jalankan dengan salah satu cara:"
+    echo ""
+    echo "  1) bash <(curl -s https://raw.githubusercontent.com/VincentSaputra/Pterodactyl-Installer-Vin/main/install.sh)"
+    echo "  2) curl -s URL -o install.sh && bash install.sh"
+    echo "  3) curl -s URL | bash -s panel panel.example.com"
+    echo ""
+    exit 1
 fi
 
 # Interactive menu mode
