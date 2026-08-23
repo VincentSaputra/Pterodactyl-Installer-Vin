@@ -131,14 +131,41 @@ install_panel() {
 
     # Step 3: Setup Database
     log_step "[3/8] Setting up database..."
+
+    # Wait for MySQL to be ready
+    log_info "Waiting for MySQL to be ready..."
+    for i in {1..30}; do
+        if mysqladmin ping -u root --silent; then
+            break
+        fi
+        sleep 2
+    done
+
+    # Create database and user
     mysql -u root <<EOF
 CREATE DATABASE IF NOT EXISTS ${DB_NAME};
 CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
 GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';
+GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'%';
 FLUSH PRIVILEGES;
 EOF
+
+    # Verify database connection
+    log_info "Verifying database connection..."
+    if ! mysql -u "${DB_USER}" -p"${DB_PASS}" -h 127.0.0.1 -e "SELECT 1" >/dev/null 2>&1; then
+        log_error "Gagal terhubung ke database! Cek kredensial MySQL."
+        log_info "Mencoba memperbaiki authentication..."
+        
+        # Try to fix by setting password explicitly
+        mysql -u root <<EOF
+ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+ALTER USER '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';
+FLUSH PRIVILEGES;
+EOF
+    fi
 
     log_info "Database created: $DB_NAME"
     log_info "Database user: $DB_USER"
