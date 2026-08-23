@@ -301,7 +301,7 @@ After=redis-server.service mysql.service
 User=www-data
 Group=www-data
 Restart=always
-ExecStart=/usr/bin/php /var/www/pterodactyl/artisan queue:work --queue=high,standard,low --sleep=3 --tries=3
+ExecStart=$(command -v php) /var/www/pterodactyl/artisan queue:work --queue=high,standard,low --sleep=3 --tries=3
 StartLimitInterval=180
 StartLimitBurst=30
 
@@ -309,10 +309,18 @@ StartLimitBurst=30
 WantedBy=multi-user.target
 EOF
 
-    systemctl enable --now pteroq.service
+    systemctl daemon-reload
+    systemctl enable --now pteroq.service || {
+        log_warn "Gagal start pteroq.service, coba perbaiki..."
+        sleep 2
+        systemctl start pteroq.service || log_warn "Queue worker mungkin butuh konfigurasi manual"
+    }
 
     # Set permissions
-    chown -R www-data:www-data /var/www/pterodactyl/*
+    chown -R www-data:www-data /var/www/pterodactyl/* 2>/dev/null || true
+
+    # Ensure queue worker directory exists
+    mkdir -p /var/lib/pterodactyl/queues
 
     # Save credentials to file
     cat > /root/pterodactyl_credentials.txt <<EOF
