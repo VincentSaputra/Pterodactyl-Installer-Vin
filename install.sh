@@ -621,33 +621,65 @@ EOF
 # ============================================================
 MODE="${1:-}"
 
+# Non-interactive mode (via arguments)
 if [[ "$MODE" == "panel" ]]; then
     shift
     install_panel "$@"
+    exit 0
 elif [[ "$MODE" == "wings" ]]; then
     shift
     install_wings "$@"
-else
-    echo "Pterodactyl Auto Installer"
-    echo ""
-    echo "Usage:"
-    echo "  ./install.sh panel <domain>       Install Pterodactyl Panel"
-    echo "  ./install.sh wings <panel_url>    Install Pterodactyl Wings"
-    echo "  ./install.sh wings <panel_url> <token>  Install Wings with token"
-    echo ""
-    echo "Examples:"
-    echo "  ./install.sh panel panel.example.com"
-    echo "  ./install.sh wings https://panel.example.com"
-    echo "  ./install.sh wings https://panel.example.com abc123token"
-    echo ""
-    
-    # Default to panel if no args provided
-    if [[ -z "$MODE" ]]; then
-        log_info "Tidak ada mode yang dipilih, default ke Panel..."
-        install_panel "${1:-panel.example.com}"
-    else
-        log_error "Mode tidak dikenali: $MODE"
-        echo "Gunakan 'panel' atau 'wings'"
-        exit 1
-    fi
+    exit 0
 fi
+
+# Interactive menu mode
+echo ""
+echo "=========================================="
+echo "  Pterodactyl Auto Installer"
+echo "=========================================="
+echo ""
+echo "Pilih instalasi:"
+echo "  1) Panel Only"
+echo "  2) Wings Only"
+echo "  3) Panel + Wings"
+echo ""
+read -p "Masukkan pilihan [1-3]: " choice
+
+case "$choice" in
+    1)
+        read -p "Masukkan domain Panel (contoh: panel.example.com): " DOMAIN
+        if [[ -z "$DOMAIN" ]]; then
+            log_error "Domain tidak boleh kosong!"
+            exit 1
+        fi
+        install_panel "$DOMAIN"
+        ;;
+    2)
+        read -p "Masukkan URL Panel (contoh: https://panel.example.com): " PANEL_URL
+        if [[ -z "$PANEL_URL" ]]; then
+            log_error "Panel URL tidak boleh kosong!"
+            exit 1
+        fi
+        install_wings "$PANEL_URL"
+        ;;
+    3)
+        read -p "Masukkan domain Panel (contoh: panel.example.com): " DOMAIN
+        if [[ -z "$DOMAIN" ]]; then
+            log_error "Domain tidak boleh kosong!"
+            exit 1
+        fi
+        install_panel "$DOMAIN"
+        echo ""
+        log_info "Panel selesai! Sekarang install Wings..."
+        read -p "Masukkan URL Panel (contoh: https://panel.example.com): " PANEL_URL
+        if [[ -z "$PANEL_URL" ]]; then
+            log_error "Panel URL tidak boleh kosong!"
+            exit 1
+        fi
+        install_wings "$PANEL_URL"
+        ;;
+    *)
+        log_error "Pilihan tidak valid!"
+        exit 1
+        ;;
+esac
